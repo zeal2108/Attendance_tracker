@@ -3,9 +3,12 @@ from logic.attendance_logic import mark_entry, mark_exit, get_today_log, get_ful
 from db.database import init_db
 import sqlite3
 
+st.set_page_config(page_title="Daily Help Attendance", page_icon="📋")
+
 # Get password and database path from secrets
 expected_password = st.secrets["database"]["password"]
 db_path = st.secrets["database"]["path"]
+
 
 # User input for password
 user_password = st.text_input("Enter Password", type="password")
@@ -18,7 +21,7 @@ if user_password == expected_password:
 
         # Initialize the database table
         init_db(conn)
-        st.set_page_config(page_title="Daily Help Attendance", page_icon="📋")
+
 
         st.title("📋 Daily Help Attendance Tracker")
         st.write("Simple app to track Entry and Exit times.")
