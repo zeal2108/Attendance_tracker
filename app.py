@@ -1,32 +1,57 @@
 import streamlit as st
 from logic.attendance_logic import mark_entry, mark_exit, get_today_log, get_full_history
+from db.database import init_db
+import sqlite3
 
-st.set_page_config(page_title="Daily Help Attendance", page_icon="📋")
+# Get password and database path from secrets
+expected_password = st.secrets["database"]["password"]
+db_path = st.secrets["database"]["path"]
 
-st.title("📋 Daily Help Attendance Tracker")
-st.write("Simple app to track Entry and Exit times.")
+# User input for password
+user_password = st.text_input("Enter Password", type="password")
 
-col1, col2 = st.columns(2)
+if user_password == expected_password:
+    try:
+        # Connect to the database
+        conn = sqlite3.connect(db_path, check_same_thread=False)
+        st.success("Access granted! Connected to the database.")
 
-with col1:
-    if st.button('✅ Mark Entry', use_container_width=True):
-        mark_entry()
+        # Initialize the database table
+        init_db(conn)
+        st.set_page_config(page_title="Daily Help Attendance", page_icon="📋")
 
-with col2:
-    if st.button('🏁 Mark Exit', use_container_width=True):
-        mark_exit()
+        st.title("📋 Daily Help Attendance Tracker")
+        st.write("Simple app to track Entry and Exit times.")
 
-st.divider()
+        col1, col2 = st.columns(2)
 
-today_log = get_today_log()
-if today_log:
-    st.info(today_log)
+        with col1:
+          if st.button('✅ Mark Entry', use_container_width=True):
+            mark_entry()
+
+        with col2:
+          if st.button('🏁 Mark Exit', use_container_width=True):
+            mark_exit()
+
+        st.divider()
+
+        today_log = get_today_log()
+        if today_log:
+          st.info(today_log)
+        else:
+          st.info("No attendance marked for today yet.")
+
+        st.divider()
+
+        if st.checkbox('Show Full Attendance History'):
+          full_history = get_full_history()
+          for record in full_history:
+            st.write(record)
+
+        conn.close()
+
+    except Exception as e:
+     st.error(f"Database error: {e}")
+
 else:
-    st.info("No attendance marked for today yet.")
-
-st.divider()
-
-if st.checkbox('Show Full Attendance History'):
-    full_history = get_full_history()
-    for record in full_history:
-        st.write(record)
+ st.error("Incorrect password!")
