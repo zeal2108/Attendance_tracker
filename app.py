@@ -13,7 +13,7 @@ user_password = st.text_input("Enter Password", type="password")
 if user_password == expected_password:
     try:
         # Connect to the database
-        conn = sqlite3.connect(db_path, check_same_thread=False)
+        conn = sqlite3.connect(db_path)
         st.success("Access granted! Connected to the database.")
 
         # Initialize the database table
@@ -27,15 +27,15 @@ if user_password == expected_password:
 
         with col1:
           if st.button('✅ Mark Entry', use_container_width=True):
-            mark_entry()
+            mark_entry(conn)
 
         with col2:
           if st.button('🏁 Mark Exit', use_container_width=True):
-            mark_exit()
+            mark_exit(conn)
 
         st.divider()
 
-        today_log = get_today_log()
+        today_log = get_today_log(conn)
         if today_log:
           st.info(today_log)
         else:
@@ -44,7 +44,7 @@ if user_password == expected_password:
         st.divider()
 
         if st.checkbox('Show Full Attendance History'):
-          full_history = get_full_history()
+          full_history = get_full_history(conn)
           for record in full_history:
             st.write(record)
 
