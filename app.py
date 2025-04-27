@@ -1,6 +1,6 @@
 import streamlit as st
 from logic.attendance_logic import mark_entry, mark_exit, get_today_log, get_full_history
-from db.database import init_db
+from db.database import init_db, reset_db
 import sqlite3
 
 # Set page config as the first Streamlit command
@@ -25,6 +25,11 @@ if user_password == expected_password:
         # Proceed with the app's UI
         st.title("📋 Daily Help Attendance Tracker")
         st.write("Simple app to track Entry and Exit times.")
+
+        if st.button("Reset Attendance Data"):
+            st.warning("Resetting all attendance data...")
+            reset_db(conn)
+            st.success("Attendance data has been reset!")
 
         col1, col2 = st.columns(2)
 

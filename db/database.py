@@ -40,3 +40,9 @@ def get_all_logs(conn):
     c = conn.cursor()
     c.execute('SELECT date, entry_time, exit_time FROM attendance ORDER BY date DESC')
     return c.fetchall()
+
+def reset_db(conn):
+    c = conn.cursor()
+    c.execute('DROP TABLE IF EXISTS attendance')
+    init_db(conn)
+    print("Database reset")
