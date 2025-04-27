@@ -1,12 +1,15 @@
 from datetime import datetime
 from db import database
 import streamlit as st
+import pytz
+
+india_tz = pytz.timezone("Asia/Kolkata")
 
 def get_today_date():
-    return datetime.now().strftime("%Y-%m-%d")
+    return datetime.now(india_tz).strftime("%Y-%m-%d")
 
 def get_current_time():
-    return datetime.now().strftime("%H:%M:%S")
+    return datetime.now(india_tz).strftime("%H:%M:%S")
 
 def mark_entry(conn):
     st.write("Inside mark_entry")  # Debug message
