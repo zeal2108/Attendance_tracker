@@ -1,7 +1,9 @@
 import streamlit as st
-from logic.attendance_logic import mark_entry, mark_exit, get_today_log, get_full_history
-from db.database import init_db, reset_db
 import sqlite3
+import pandas as pd
+from logic.attendance_logic import mark_entry, mark_exit, get_today_log, get_full_history, get_monthly_history
+from db.database import init_db, reset_db
+from datetime import datetime
 
 # Set page config as the first Streamlit command
 st.set_page_config(page_title="Daily Help Attendance", page_icon="📋")
@@ -43,7 +45,7 @@ if user_password == expected_password:
             if st.button('🏁 Mark Exit', use_container_width=True):
                 st.write("Mark Exit button clicked!")  # Debug message
                 mark_exit(conn)
-                  # Force UI refresh
+
 
         st.divider()
 
@@ -54,6 +56,15 @@ if user_password == expected_password:
             st.info("No attendance marked for today yet.")
 
         st.divider()
+
+        st.subheader("Monthly Attendance History")
+        current_year = datetime.now().year
+        current_month = datetime.now().month
+        months = [f"{current_year}-{str(m).zfill(2)}" for m in range(1, current_month+1)]
+        selected_month = st.selectbox("Select Month", months, index=len(months)-1)
+        monthly_history = get_monthly_history(conn, selected_month)
+        for record in monthly_history:
+            st.write(record)
 
         if st.checkbox('Show Full Attendance History'):
             full_history = get_full_history(conn)
