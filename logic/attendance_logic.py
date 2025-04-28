@@ -17,11 +17,11 @@ def mark_entry(conn):
     current_time = get_current_time()
     existing = database.get_today_log(conn, today)
 
-    #if existing is None:
-    database.insert_entry(conn, today, current_time)
-    st.write(f"Entry marked for {today} at {current_time}")  # Debug message
-    #else:
-        #st.write("Entry already exists, doing nothing")  # Debug message
+    if existing is None:
+     database.insert_entry(conn, today, current_time)
+     st.write(f"Entry marked for {today} at {current_time}")  # Debug message
+    else:
+      st.write("Entry already exists, doing nothing")  # Debug message
 
 def mark_exit(conn):
     st.write("Inside mark_exit")  # Debug message
@@ -49,3 +49,12 @@ def get_full_history(conn):
     for date, entry, exit in records:
         formatted.append(f"{date}: Entry at {entry} | Exit at {exit if exit else 'Not marked'}")
     return formatted
+
+def get_monthly_history(conn, year_month):
+    records = database.get_all_logs(conn)
+    formatted = []
+    for date, entry, exit in records:
+        if date.startswith(year_month):
+            formatted.append(f"{date}: Entry at {entry} | Exit at {exit if exit else 'Not marked'}")
+
+    return formatted if formatted else ["No attendance records for this month"]
