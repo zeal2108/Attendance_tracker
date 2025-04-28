@@ -56,5 +56,4 @@ def get_monthly_history(conn, year_month):
     for date, entry, exit in records:
         if date.startswith(year_month):
             formatted.append(f"{date}: Entry at {entry} | Exit at {exit if exit else 'Not marked'}")
-
     return formatted if formatted else ["No attendance records for this month"]
