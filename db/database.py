@@ -7,38 +7,42 @@ def init_db(conn):
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT,
         entry_time TEXT,
-        exit_time TEXT
+        exit_time TEXT,
+        type TEXT, 
+        parent_id INTEGER
+       
     )
   ''')
+  c.execute('CREATE INDEX IF NOT EXISTS idx_date ON attendance(date)')
   conn.commit()
   print("Database initialized")  # Debug message
 
 
 # Insert entry time
-def insert_entry(conn, date, entry_time):
+def insert_entry(conn, date, entry_time, entry_type, parent_id = None):
     c = conn.cursor()
-    c.execute('INSERT INTO attendance (date, entry_time) VALUES (?, ?)', (date, entry_time))
+    c.execute('INSERT INTO attendance (date, entry_time, type, parent_id) VALUES (?, ?, ?, ?)', (date, entry_time, entry_type, parent_id))
     conn.commit()
-    print(f"Inserted entry for {date} at {entry_time}")  # Debug message
+    print(f"Inserted entry for {date} at {entry_time}")# Debug message
+    return c.lastrowid
 
 # Update exit time
-def update_exit(conn, date, exit_time):
+def update_exit(conn, entry_id, exit_time):
     c = conn.cursor()
-    c.execute('UPDATE attendance SET exit_time = ? WHERE date = ?', (exit_time, date))
+    c.execute('UPDATE attendance SET exit_time = ? WHERE id = ?', (exit_time, entry_id))
     conn.commit()
-    print(f"Updated exit for {date} at {exit_time}")  # Debug message
-
+    print(f"Updated exit for {entry_id} at {exit_time}")  # Debug message
 
 # Fetch today's log
 def get_today_log(conn, date):
     c = conn.cursor()
-    c.execute('SELECT entry_time, exit_time FROM attendance WHERE date = ?', (date,))
-    return c.fetchone()
+    c.execute('SELECT id, entry_time, exit_time, type, parent_id FROM attendance WHERE date = ?', (date,))
+    return c.fetchall()
 
 # Fetch all attendance records
-def get_all_logs(conn):
+def get_all_logs(conn, limit = 100):
     c = conn.cursor()
-    c.execute('SELECT date, entry_time, exit_time FROM attendance ORDER BY date DESC')
+    c.execute('SELECT date, entry_time, exit_time, type FROM attendance ORDER BY date DESC LIMIT ?', (limit,))
     return c.fetchall()
 
 def reset_db(conn):
