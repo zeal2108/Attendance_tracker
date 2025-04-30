@@ -34,10 +34,11 @@ def update_exit(conn, entry_id, exit_time):
     print(f"Updated exit for {entry_id} at {exit_time}")  # Debug message
 
 # Fetch today's log
-def get_today_log(conn, date):
+def fetch_today_log(conn, date):
     c = conn.cursor()
     c.execute('SELECT id, entry_time, exit_time, type, parent_id FROM attendance WHERE date = ?', (date,))
     return c.fetchall()
+
 
 # Fetch all attendance records
 def get_all_logs(conn, limit = 100):

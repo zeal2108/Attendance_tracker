@@ -1,7 +1,7 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-from logic.attendance_logic import mark_entry, mark_exit, start_lunch, end_lunch, get_today_log, get_full_history, get_monthly_history
+from logic.attendance_logic import mark_entry, mark_exit, start_lunch, end_lunch, get_today_log, get_log_for_date, get_full_history, get_monthly_history
 from db.database import init_db, reset_db
 from datetime import datetime, timedelta
 
@@ -69,23 +69,19 @@ if user_password == expected_password:
             st.info("No attendance marked for today yet !!")
 
         with st.sidebar:
+
             st.header("Additional Options")
 
-            with st.expander("Month-Wise Attendance History"):
+            with st.expander("View Log for Specific Date", expanded = True):
                 current_year = datetime.now().year
                 current_month = datetime.now().month
-                months = [f"{current_year}-{str(m).zfill(2)}" for m in range(1, current_month+1)]
-                selected_month = st.selectbox("Select Month", months, index=len(months)-1)
-                monthly_history = get_monthly_history(conn, selected_month)
-                for record in monthly_history:
-                  st.write(record)
-
-            st.divider()
-
-            if st.checkbox('Show Full Attendance History'):
-              full_history = get_full_history(conn)
-              for record in full_history:
-                 st.write(record)
+                selected_date = st.date_input("Select a date", value = datetime.now(), min_value = datetime(current_year, 1, 1),
+                max_value = datetime.now())
+                selected_date_str = selected_date.strftime("%Y-%m-%d")
+                date_log = get_log_for_date(conn, selected_date_str)
+                st.write(f"Log for {selected_date_str} : ")
+                for log in date_log.split("\n"):
+                    st.write(log)
 
             st.divider()
 

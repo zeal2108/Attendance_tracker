@@ -3,6 +3,8 @@ from db import database
 import streamlit as st
 import pytz
 
+from db.database import fetch_today_log
+
 india_tz = pytz.timezone("Asia/Kolkata")
 
 def get_today_date():
@@ -102,7 +104,7 @@ def mark_exit(conn):
 
 def get_today_log(conn):
     today = get_today_date()
-    logs = database.get_today_log(conn, today)
+    logs = fetch_today_log(conn, today)
     if logs:
         formatted_logs = []
         main_log = None
@@ -119,6 +121,43 @@ def get_today_log(conn):
             formatted_logs.append(lunch_log)
         return "\n".join(formatted_logs)
     return None
+
+
+
+def get_log_for_date(conn, date):
+    """
+    Retrieve the attendance log for a specific date as a formatted string.
+
+    Args:
+        conn: SQLite database connection
+        date (str): Date in YYYY-MM-DD format
+
+    Returns:
+        str: Formatted log string for the specified date
+    """
+    logs = fetch_today_log(conn, date)
+    if not logs:
+        return f"No attendance records for {date}."
+
+    log_text = []
+    #main_hours, lunch_hours, work_hours = calculate_daily_work_hours(conn, date)
+
+    for log in logs:
+        entry_id, entry_time, exit_time, entry_type, parent_id= log
+        if entry_type == "main":
+            log_text.append(f"Main: Entry at {entry_time} | Exit at {exit_time if exit_time else 'Not Marked'}")
+        elif entry_type == "lunch" and parent_id:
+            log_text.append(f"  Lunch: Entry at {entry_time} | Exit at {exit_time if exit_time else 'Not Marked'}")
+
+    # Add work hours summary
+    #if main_hours is not None:
+        #log_text.append(f"Main Duration: {main_hours:.2f} hours")
+    #if lunch_hours is not None:
+        #log_text.append(f"Lunch Duration: {lunch_hours:.2f} hours")
+    #if work_hours is not None:
+        #log_text.append(f"Work Hours (excluding lunch): {work_hours:.2f} hours")
+
+    return "\n".join(log_text)
 
 def get_full_history(conn):
     records = database.get_all_logs(conn, limit = 100)
