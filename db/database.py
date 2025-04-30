@@ -39,6 +39,7 @@ def fetch_today_log(conn, date):
     c.execute('SELECT id, entry_time, exit_time, type, parent_id FROM attendance WHERE date = ?', (date,))
     return c.fetchall()
 
+
 # Fetch all attendance records
 def get_all_logs(conn, limit = 100):
     c = conn.cursor()

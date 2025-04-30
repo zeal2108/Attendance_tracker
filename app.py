@@ -69,6 +69,7 @@ if user_password == expected_password:
             st.info("No attendance marked for today yet !!")
 
         with st.sidebar:
+
             st.header("Additional Options")
 
             with st.expander("View Log for Specific Date", expanded = True):

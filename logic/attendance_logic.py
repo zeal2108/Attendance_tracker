@@ -123,6 +123,7 @@ def get_today_log(conn):
     return None
 
 
+
 def get_log_for_date(conn, date):
     """
     Retrieve the attendance log for a specific date as a formatted string.
