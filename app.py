@@ -81,7 +81,7 @@ if user_password == expected_password:
                 date_log = get_log_for_date(conn, selected_date_str)
                 st.write(f"Log for {selected_date_str} : ")
                 for log in date_log.split("\n"):
-                    st.write(log)
+                    st.info(log)
 
             st.divider()
 

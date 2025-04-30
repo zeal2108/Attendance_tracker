@@ -1,4 +1,6 @@
 from datetime import datetime
+from itertools import dropwhile
+
 from db import database
 import streamlit as st
 import pytz
@@ -79,6 +81,44 @@ def end_lunch(conn):
     else:
         st.write("doing nothing")
 
+def calculate_duration(start_time, end_time):
+    if not start_time or not end_time:
+        return None
+    try:
+        start = datetime.strptime(start_time, "%H:%M:%S")
+        end = datetime.strptime(end_time,"%H:%M:%S" )
+        duration_seconds = (end - start).total_seconds()
+        if duration_seconds <0 :
+            return None
+        return round(duration_seconds / 3600, 2)
+    except ValueError:
+        return None
+
+def calculate_daily_hours(conn, date):
+    logs = fetch_today_log(conn, date)
+    if not logs:
+        return None, None, None
+    main_entry_time, main_exit_time, lunch_entry_time, lunch_exit_time = None, None, None, None
+
+    for log in logs:
+        entry_id, entry_time, exit_time, entry_type ,parent_id = log
+        if entry_type == "main":
+            main_entry_time, main_exit_time = entry_time, exit_time
+        elif entry_type == "lunch":
+            lunch_entry_time, lunch_exit_time = entry_time, exit_time
+
+    main_hours = calculate_duration(main_entry_time, main_exit_time)
+    if main_hours is None:
+        return None, None, None
+
+    lunch_hours = calculate_duration(lunch_entry_time, lunch_exit_time)
+    if lunch_hours is None:
+        return None, None, None
+
+    total_hours = main_hours - (lunch_hours if lunch_hours else 0)
+    return main_hours, lunch_hours, total_hours
+
+
 def mark_exit(conn):
     st.write("Inside mark_exit")  # Debug message
     today = get_today_date()
@@ -101,6 +141,7 @@ def mark_exit(conn):
         #st.write(f"Exit marked for {today} at {current_time}")  # Debug message
     #else:
         #st.write("No entry or already exited, doing nothing")  # Debug message
+
 
 def get_today_log(conn):
     today = get_today_date()
@@ -140,7 +181,7 @@ def get_log_for_date(conn, date):
         return f"No attendance records for {date}."
 
     log_text = []
-    #main_hours, lunch_hours, work_hours = calculate_daily_work_hours(conn, date)
+    main_hours, lunch_hours, work_hours = calculate_daily_hours(conn, date)
 
     for log in logs:
         entry_id, entry_time, exit_time, entry_type, parent_id= log
@@ -150,12 +191,12 @@ def get_log_for_date(conn, date):
             log_text.append(f"  Lunch: Entry at {entry_time} | Exit at {exit_time if exit_time else 'Not Marked'}")
 
     # Add work hours summary
-    #if main_hours is not None:
-        #log_text.append(f"Main Duration: {main_hours:.2f} hours")
-    #if lunch_hours is not None:
-        #log_text.append(f"Lunch Duration: {lunch_hours:.2f} hours")
-    #if work_hours is not None:
-        #log_text.append(f"Work Hours (excluding lunch): {work_hours:.2f} hours")
+    if main_hours is not None:
+        log_text.append(f"Main Duration: {main_hours:.2f} hours")
+    if lunch_hours is not None:
+        log_text.append(f"Lunch Duration: {lunch_hours:.2f} hours")
+    if work_hours is not None:
+        log_text.append(f"Work Hours (excluding lunch): {work_hours:.2f} hours")
 
     return "\n".join(log_text)
 
