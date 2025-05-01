@@ -1,6 +1,4 @@
 from datetime import datetime
-from itertools import dropwhile
-
 from db import database
 import streamlit as st
 import pytz
@@ -211,15 +209,3 @@ def get_full_history(conn):
             formatted.append(f"{date} (Lunch): Entry at {entry_time} | Exit at {exit_time if exit_time
             else 'Not Marked'}")
     return formatted
-
-def get_monthly_history(conn, year_month):
-    records = database.get_all_logs(conn, limit = 100)
-    formatted = []
-    for date, entry_time, exit_time, entry_type in records:
-        if entry_type == 'main':
-            formatted.append(f"{date} (Main): Entry at {entry_time} | Exit at {exit_time if exit_time 
-            else 'Not Marked'}")
-        elif entry_type == 'lunch':
-            formatted.append(f"{date} (Lunch): Entry at {entry_time} | Exit at {exit_time if exit_time
-            else 'Not Marked'}")
-    return formatted if formatted else ["No attendance records for this month."]

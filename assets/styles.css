@@ -1,0 +1,95 @@
+/* General page styling */
+html, body, [class*="css"] {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f7f9fc;
+}
+
+/* Sidebar styling */
+section[data-testid="stSidebar"] {
+   width: 400px !important;
+    min-width: 400px !important;
+    max-width: 400px !important;
+    resize: none !important;
+    overflow: hidden !important;
+    background-color: #333 !important;
+}
+
+/* Targeting Streamlit buttons more specifically */
+div.stButton button {
+    background-color: #007bff; /* Blue color */
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3); /* Light shadow */
+    outline: none;
+}
+
+/* Hover effect for all buttons */
+div.stButton button:hover {
+    background-color: #0056b3; /* Darker blue */
+    color: black; /* Change text color to black on hover */
+    transform: translateY(-3px); /* Slight lift effect */
+    box-shadow: 0 6px 15px rgba(0, 123, 255, 0.4); /* Stronger shadow */
+}
+
+/* Focus effect */
+div.stButton button:focus {
+    outline: none;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.5); /* Blue glow on focus */
+}
+
+/* Active (clicked) button */
+div.stButton button:active {
+    background-color: #004085; /* Even darker blue when clicked */
+    color: black; /* Keep text color black when clicked */
+    transform: translateY(2px); /* Slight press effect */
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); /* Subtle shadow when clicked */
+}
+
+/* Disabled button */
+div.stButton button:disabled {
+    background-color: #A0A0A0; /* Greyed-out button */
+    color: #FFFFFF;
+    cursor: not-allowed;
+    box-shadow: none; /* Remove shadow for disabled state */
+}
+
+
+/* Style for all h1 headers */
+div[data-testid="stMarkdownContainer"] h1,
+div[data-testid="stHeadingWithActionElements"] h1 {
+    font-size: 36px; /* Adjust font size */
+    color: #FFFFFF; /* Change text color */
+    font-weight: bolder; /* Make text bold */
+    margin-bottom: 16px; /* Add space below */
+}
+
+/* Style for all h2 headers */
+div[data-testid="stMarkdownContainer"] h2,
+div[data-testid="stHeadingWithActionElements"] h2 {
+    font-size: 30px; /* Adjust font size */
+    color: #FFFFFF; /* Change text color */
+    font-weight: bold; /* Semi-bold text */
+    margin-bottom: 14px; /* Add space below */
+}
+
+/* Style for all h3 headers */
+div[data-testid="stMarkdownContainer"] h3,
+div[data-testid="stHeadingWithActionElements"] h3 {
+    font-size: 24px; /* Adjust font size */
+    color: #FFFFFF; /* Change text color */
+    font-weight: normal; /* Regular weight */
+    margin-bottom: 12px; /* Add space below */
+}
+
+hr {
+    border: 0;
+    height: 1px;
+    background-color: #ddd;
+    margin: 1em 0;
+}

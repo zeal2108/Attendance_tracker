@@ -1,21 +1,58 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-from logic.attendance_logic import mark_entry, mark_exit, start_lunch, end_lunch, get_today_log, get_log_for_date, get_full_history, get_monthly_history
+from streamlit import experimental_dialog
+
+from logic.attendance_logic import mark_entry, mark_exit, start_lunch, end_lunch, get_today_log, get_log_for_date
 from db.database import init_db, reset_db
 from datetime import datetime, timedelta
 
 # Set page config as the first Streamlit command
 st.set_page_config(page_title="Daily Help Attendance", page_icon="📋")
 
+with open("assets/styles.css", "r") as css_file:
+    css = css_file.read()
+st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+
+
 # Get password and database path from secrets
 expected_password = st.secrets["database"]["password"]
 db_path = st.secrets["database"]["path"]
+dev_password = st.secrets["database"]["dev_password"]
 
-# User input for password
-user_password = st.text_input("Enter Password", type="password")
+if 'authentication' not in st.session_state:
+     st.session_state['authentication'] = False
+if 'pwd_input' not in st.session_state:
+     st.session_state['pwd_input'] = ""
+if 'reset_confirmed' not in st.session_state:
+    st.session_state['reset_confirmed'] = False
 
-if user_password == expected_password:
+
+#User input for password
+@st.dialog("Enter Password")
+def ask_pwd_dialog():
+    u_pwd = st.text_input("Press enter to confirm", type="password", key="dialog_pwd_input")
+    if st.button("Continue"):
+        if u_pwd:
+            st.session_state['pwd_input'] = u_pwd
+            st.rerun()
+        else:
+            st.error("Please Enter Password. ")
+
+if not st.session_state['authentication']:
+    ask_pwd_dialog()
+    user_password = st.session_state["pwd_input"]
+    if user_password == expected_password:
+        st.session_state['authentication'] = True
+        st.session_state['pwd_input'] = ''
+        st.rerun()
+    elif user_password != "" and user_password != expected_password:
+        st.error("Invalid Password, Try Again !!")
+        st.session_state['pwd_input'] = ''
+        st.rerun()
+
+
+if st.session_state['authentication']:
     try:
         # Connect to the database
         conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -29,33 +66,29 @@ if user_password == expected_password:
         st.title("📋 Daily Help Attendance Tracker")
         st.write("Simple app to track Entry and Exit times.")
 
-        if st.button("Reset Attendance Data"):
-            st.warning("Resetting all attendance data...")
-            reset_db(conn)
-            st.success("Attendance data has been reset!")
 
         col1, col2, col3, col4 = st.columns(4)
 
         with col1:
-            if st.button('✅ Mark Entry', use_container_width=True):
+            if st.button('✅ Mark Entry', use_container_width=True, key="mark_entry_btn"):
                 st.write("Mark Entry button clicked!")  # Debug message
                 mark_entry(conn)
 
 
         with col2:
-            if st.button('🍴 Start Lunch', use_container_width=True):
+            if st.button('🍴 Start Lunch', use_container_width=True, key="start_lunch_btn"):
                 start_lunch(conn)
                 st.success("Lunch Started")
 
 
         with col3:
-            if st.button('🍽️ End Lunch', use_container_width=True):
+            if st.button('🍽️ End Lunch', use_container_width=True, key="end_lunch_btn"):
                 end_lunch(conn)
                 st.success("Lunch ended.")
 
 
         with col4:
-            if st.button('🏁 Mark Exit', use_container_width=True):
+            if st.button('🏁 Mark Exit', use_container_width=True, key="mark_exit_btn"):
                 st.write("Mark Exit button clicked!")  # Debug message
                 mark_exit(conn)
 
@@ -108,12 +141,26 @@ if user_password == expected_password:
                file_name = "attendance_data.csv",
                mime = "text/csv"
                )
+
+            with st.expander("Reset Attendance Data"):
+                dev_input = st.text_input("Enter Master Control Key", type="password")
+                if dev_input == dev_password:
+                    st.info("Confirm Reset ( all saved records will be removed )")
+                    if st.button("Confirm"):
+                        reset_db(conn)
+                        st.session_state['reset_confirmed'] = True
+                        st.warning("Resetting all attendance data...")
+                        st.success("Attendance data has been reset!")
+                        st.rerun()
+
+                elif dev_input != "" and dev_input != dev_password:
+                   st.error("Invalid Key Entered, Try Again !!")
         # Close the connection
         conn.close()
     except Exception as e:
         st.error(f"Database error: {e}")
 else:
-    st.error("Incorrect password!")
+    pass
 
 
 
