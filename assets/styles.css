@@ -4,16 +4,6 @@ html, body, [class*="css"] {
     background-color: #f7f9fc;
 }
 
-/* Sidebar styling */
-section[data-testid="stSidebar"] {
-   width: 400px !important;
-    min-width: 400px !important;
-    max-width: 400px !important;
-    resize: none !important;
-    overflow: hidden !important;
-    background-color: #333 !important;
-}
-
 /* Targeting Streamlit buttons more specifically */
 div.stButton button {
     background-color: #007bff; /* Blue color */
@@ -45,8 +35,7 @@ div.stButton button:focus {
 
 /* Active (clicked) button */
 div.stButton button:active {
-    background-color: #004085; /* Even darker blue when clicked */
-    color: black; /* Keep text color black when clicked */
+    background-color: #004085; /* Even darker blue when clicked *
     transform: translateY(2px); /* Slight press effect */
     box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3); /* Subtle shadow when clicked */
 }
@@ -58,7 +47,6 @@ div.stButton button:disabled {
     cursor: not-allowed;
     box-shadow: none; /* Remove shadow for disabled state */
 }
-
 
 /* Style for all h1 headers */
 div[data-testid="stMarkdownContainer"] h1,
@@ -86,7 +74,28 @@ div[data-testid="stHeadingWithActionElements"] h3 {
     font-weight: normal; /* Regular weight */
     margin-bottom: 12px; /* Add space below */
 }
+/* Sidebar styling */
+section[data-testid="stSidebar"] {
+   width: 400px !important;
+    min-width: 400px !important;
+    max-width: 400px !important;
+    resize: none !important;
+    overflow: hidden !important;
+    background-color: #333 !important;
+}
 
+@media screen and (max-width: 768px) {
+    /* Make the sidebar cover the whole screen */
+    .css-1d391kg {
+        position: relative !important;
+        top: 0;
+        left: 0;
+        height: 100vh !important; /* Full screen height */
+        width: 100% !important; /* Full screen width */
+        z-index: 1000 !important; /* Ensure sidebar is on top */
+        background-color: #fff !important; /* Optional: change background color */
+    }
+}
 hr {
     border: 0;
     height: 1px;
