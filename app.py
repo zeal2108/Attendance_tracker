@@ -1,11 +1,11 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-from streamlit import experimental_dialog
-
 from logic.attendance_logic import mark_entry, mark_exit, start_lunch, end_lunch, get_today_log, get_log_for_date
 from db.database import init_db, reset_db
 from datetime import datetime, timedelta
+from assets.formatting import format_date_pretty
+
 
 # Set page config as the first Streamlit command
 st.set_page_config(page_title="Daily Help Attendance", page_icon="📋")
@@ -71,7 +71,7 @@ if st.session_state['authentication']:
 
         with col1:
             if st.button('✅ Mark Entry', use_container_width=True, key="mark_entry_btn"):
-                st.write("Mark Entry button clicked!")  # Debug message
+                #st.write("Mark Entry button clicked!")  # Debug message
                 mark_entry(conn)
 
 
@@ -89,7 +89,7 @@ if st.session_state['authentication']:
 
         with col4:
             if st.button('🏁 Mark Exit', use_container_width=True, key="mark_exit_btn"):
-                st.write("Mark Exit button clicked!")  # Debug message
+                #st.write("Mark Exit button clicked!")  # Debug message
                 mark_exit(conn)
 
 
@@ -105,14 +105,14 @@ if st.session_state['authentication']:
 
             st.header("Additional Options")
 
-            with st.expander("View Log for Specific Date", expanded = True):
+            with st.expander("View Log for Specific Date"):
                 current_year = datetime.now().year
                 current_month = datetime.now().month
                 selected_date = st.date_input("Select a date", value = datetime.now(), min_value = datetime(current_year, 1, 1),
                 max_value = datetime.now())
                 selected_date_str = selected_date.strftime("%Y-%m-%d")
                 date_log = get_log_for_date(conn, selected_date_str)
-                st.write(f"Log for {selected_date_str} : ")
+                st.write(f"Log for {format_date_pretty(selected_date_str)} : ")
                 for log in date_log.split("\n"):
                     st.info(log)
 
