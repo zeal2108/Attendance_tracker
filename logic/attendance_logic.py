@@ -132,7 +132,7 @@ def mark_exit(conn):
     if main_entry:
         main_entry_id, main_entry_time = main_entry
         database.update_exit(conn, main_entry_id, current_time)
-        st.write(f"Exit marked for {today} at {to_12_hour_format(current_time)} (paired with entry at {main_entry_time})")
+        st.write(f"Exit marked for {today} at {to_12_hour_format(current_time)}")
     else:
         pass #st.write("No main entry to mark exit for today, or main exit already marked")
 
@@ -179,17 +179,17 @@ def get_log_for_date(conn, date):
     for log in logs:
         entry_id, entry_time, exit_time, entry_type, parent_id= log
         if entry_type == "main":
-            log_text.append(f"Main: Entry at {to_12_hour_format(entry_time)} | Exit at {to_12_hour_format(exit_time) if exit_time else 'Not Marked'}")
+            log_text.append(f"Main Entry : {to_12_hour_format(entry_time)} | Exit : {to_12_hour_format(exit_time) if exit_time else 'Not Marked'}")
         elif entry_type == "lunch" and parent_id:
-            log_text.append(f"  Lunch: Entry at {to_12_hour_format(entry_time)} | Exit at {to_12_hour_format(exit_time) if exit_time else 'Not Marked'}")
+            log_text.append(f"  Lunch Entry : {to_12_hour_format(entry_time)} | Exit : {to_12_hour_format(exit_time) if exit_time else 'Not Marked'}")
 
     # Add work hours summary
-    #if main_hours is not None:
-        #log_text.append(f"Main Duration: {main_hours:.2f} hours")
+    if main_hours is not None:
+        log_text.append(f"Main Duration: {main_hours:.2f} hours")
     if lunch_hours is not None:
-        log_text.append(f"Lunch Duration: {lunch_hours:.2f} hours")
+        log_text.append(f"Lunch Duration: {lunch_hours:.2f} hrs")
     if work_hours is not None:
-        log_text.append(f"Work Hours (excluding lunch): {work_hours:.2f} hours")
+        log_text.append(f"Work Hours (excluding lunch): {work_hours:.2f} hrs")
 
     return "\n".join(log_text)
 

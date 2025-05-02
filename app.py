@@ -26,6 +26,15 @@ if 'pwd_input' not in st.session_state:
      st.session_state['pwd_input'] = ""
 if 'reset_confirmed' not in st.session_state:
     st.session_state['reset_confirmed'] = False
+if 'lunch_active' not in st.session_state:
+    st.session_state['lunch_active'] = False
+if 'entry_active' not in st.session_state:
+    st.session_state['entry_active'] = False
+if 'has_exited' not in st.session_state:
+    st.session_state['has_exited'] = False
+if 'current_date' not in st.session_state:
+    st.session_state['current_date'] = datetime.now().strftime("%Y-%m-%d")
+
 
 
 #User input for password
@@ -46,7 +55,7 @@ if not st.session_state['authentication']:
         st.session_state['authentication'] = True
         st.session_state['pwd_input'] = ''
         st.rerun()
-    elif user_password != "" and user_password != expected_password:
+    elif user_password != '' and user_password != expected_password:
         st.error("Invalid Password, Try Again !!")
         st.session_state['pwd_input'] = ''
         st.rerun()
@@ -56,42 +65,90 @@ if st.session_state['authentication']:
     try:
         # Connect to the database
         conn = sqlite3.connect(db_path, check_same_thread=False)
-        st.success("Access granted! Connected to the database.")
+        #st.success("Access granted! Connected to the database.")
 
         # Initialize the database table
         init_db(conn)
 
+        today = datetime.now().strftime("%Y-%m-%d")
+        if today != st.session_state['current_date']:
+            st.session_state['has_entered'] = False
+            st.session_state['lunch_active'] = False
+            st.session_state['has_exited'] = False
+
+            # Check if an entry-exit pair already exists for today
+        c = conn.cursor()
+        c.execute("SELECT * FROM attendance WHERE date = ? AND type = 'main' AND id IS NOT NULL AND entry_time IS NOT NULL AND exit_time IS NOT NULL",
+                (today,))
+        if c.fetchone():
+            st.session_state['has_exited'] = True
+            st.session_state['has_entered'] = False
+            st.session_state['lunch_active'] = False
+        else:
+            # Check if an entry exists for today
+            c.execute("SELECT * FROM attendance WHERE date = ? AND type = 'main'", (today,))
+            if c.fetchone():
+                st.session_state['has_entered'] = True
+            # Check if an active lunch record exists for today
+            c.execute("SELECT * FROM attendance WHERE date = ? AND type = 'lunch' AND exit_time IS NULL", (today,))
+            if c.fetchone():
+                st.session_state['lunch_active'] = True
+            else:
+                st.session_state['lunch_active'] = False
 
         # Proceed with the app's UI
         st.title("📋 Daily Help Attendance Tracker")
         st.write("Simple app to track Entry and Exit times.")
 
 
-        col1, col2, col3, col4 = st.columns(4)
+        left_col, right_col = st.columns(2)
 
-        with col1:
-            if st.button('✅ Mark Entry', use_container_width=True, key="mark_entry_btn"):
-                #st.write("Mark Entry button clicked!")  # Debug message
+        with (left_col):
+            disable_entry = st.session_state['has_exited']
+            if st.button('✅ Mark Entry', use_container_width=True, key="mark_entry_btn", disabled = disable_entry):
+                st.session_state['entry_active'] = True
                 mark_entry(conn)
 
-
-        with col2:
-            if st.button('🍴 Start Lunch', use_container_width=True, key="start_lunch_btn"):
-                start_lunch(conn)
-                st.success("Lunch Started")
-
-
-        with col3:
-            if st.button('🍽️ End Lunch', use_container_width=True, key="end_lunch_btn"):
-                end_lunch(conn)
-                st.success("Lunch ended.")
-
-
-        with col4:
-            if st.button('🏁 Mark Exit', use_container_width=True, key="mark_exit_btn"):
-                #st.write("Mark Exit button clicked!")  # Debug message
+            c = conn.cursor()
+            today = datetime.now().strftime("%Y-%m-%d")
+            c.execute(
+                "SELECT exit_time FROM attendance WHERE date = ? AND type = 'lunch' ORDER BY entry_time DESC LIMIT 1",
+                (today,))
+            lunch_exit = c.fetchone()
+            disable_exit = not st.session_state['entry_active'] or st.session_state['has_exited'] or st.session_state['lunch_active']
+            if st.button('🏁 Mark Exit', use_container_width=True, key="mark_exit_btn", disabled=disable_exit):
                 mark_exit(conn)
+                st.session_state['entry_active'] = False
+                st.session_state['lunch_active'] = False
+                c = conn.cursor()
+                c.execute(
+                    "SELECT * FROM attendance WHERE date = ? AND type = 'main' AND entry_time IS NOT NULL AND exit_time IS NOT NULL",
+                    (today,))
+                if c.fetchone():
+                    st.session_state['has_exited'] = True
+                st.rerun()
 
+        with right_col:
+            today = datetime.now().strftime("%Y-%m-%d")
+            c.execute(
+                "SELECT entry_time FROM attendance WHERE date = ? AND type = 'main' ORDER BY entry_time DESC LIMIT 1",
+                (today,))
+            main_entry = c.fetchone()
+            disable_exit = not st.session_state['entry_active'] or main_entry is None or st.session_state['has_exited']
+            if st.button('🍴 Start Lunch', use_container_width=True, key="start_lunch_btn", disabled = disable_exit):
+                start_lunch(conn)
+                st.session_state['lunch_active'] = True
+                st.rerun()
+                    #st.success("Lunch Started")
+            c.execute(
+                "SELECT entry_time FROM attendance WHERE date = ? AND type = 'main' ORDER BY entry_time DESC LIMIT 1",
+                (today,))
+            main_entry = c.fetchone()
+            if st.button('🍽️ End Lunch', use_container_width=True, key="end_lunch_btn", disabled = disable_exit):
+                end_lunch(conn)
+                st.session_state['lunch_active'] = False
+                st.rerun()
+                #st.success("Lunch ended.")
 
         st.divider()
         today_log = get_today_log(conn)

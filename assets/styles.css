@@ -74,26 +74,43 @@ div[data-testid="stHeadingWithActionElements"] h3 {
     font-weight: normal; /* Regular weight */
     margin-bottom: 12px; /* Add space below */
 }
+
 /* Sidebar styling */
 section[data-testid="stSidebar"] {
-   width: 400px !important;
+   width: auto !important;
     min-width: 400px !important;
     max-width: 400px !important;
     resize: none !important;
     overflow: hidden !important;
     background-color: #333 !important;
+    border-bottom: 2px solid #007bff !important;
 }
 
 @media screen and (max-width: 768px) {
     /* Make the sidebar cover the whole screen */
-    .css-1d391kg {
-        position: relative !important;
-        top: 0;
-        left: 0;
-        height: 100vh !important; /* Full screen height */
-        width: 100% !important; /* Full screen width */
-        z-index: 1000 !important; /* Ensure sidebar is on top */
-        background-color: #fff !important; /* Optional: change background color */
+    [data-testid="stSidebar"] {
+        width: 0 !important; /* Fully collapse sidebar */
+        min-width: 0 !important;
+        max-width: 0 !important;
+        overflow: hidden !important; /* Prevent content from showing */
+        border-right: none !important; /* Remove border when collapsed */
+    }
+
+    /* Ensure sidebar content is hidden when collapsed */
+    [data-testid="stSidebar"] > div {
+        display: none !important;
+    }
+
+    /* When sidebar is toggled open (Streamlit adds this class) */
+    [data-testid="stSidebar"][aria-expanded="true"] {
+        width: 100% !important; /* Full width when open on mobile */
+        min-width: 100% !important;
+        max-width: 100% !important;
+        overflow: visible !important;
+    }
+
+    [data-testid="stSidebar"][aria-expanded="true"] > div {
+        display: block !important;
     }
 }
 hr {
@@ -101,4 +118,27 @@ hr {
     height: 1px;
     background-color: #ddd;
     margin: 1em 0;
+}
+
+.stAlert, .stAlertContainer {
+    border-radius: 5px !important;
+    padding: 10px !important;
+    margin: 10px !important;
+}
+
+.stAlert {
+    background-color: #000000 !important;
+    border-bottom: 4px solid #007bff !important;
+}
+
+.stAlertContainer {
+    background-color: #000000 !important;
+    border-left: 4px solid #000000 !important;
+}
+
+div[data-testid="stAlertContentInfo"] {
+    font-size: xx-small;
+    color: #FFFFFF; /* Change text color */
+    font-weight: normal; /* Regular weight */
+
 }
