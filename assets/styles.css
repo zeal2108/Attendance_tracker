@@ -137,7 +137,6 @@ hr {
 }
 
 div[data-testid="stAlertContentInfo"] {
-    font-size: xx-small;
     color: #FFFFFF; /* Change text color */
     font-weight: normal; /* Regular weight */
 
