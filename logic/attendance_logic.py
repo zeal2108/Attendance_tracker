@@ -2,9 +2,7 @@ from datetime import datetime
 from db import database
 import streamlit as st
 import pytz
-from assets.formatting import to_12_hour_format
-from assets.formatting import format_date_pretty
-
+from assets.formatting import to_12_hour_format, format_date_pretty, format_duration
 from db.database import fetch_today_log
 
 india_tz = pytz.timezone("Asia/Kolkata")
@@ -14,7 +12,6 @@ def get_today_date():
 
 def get_current_time():
     return datetime.now(india_tz).strftime("%H:%M:%S")
-
 
 def mark_entry(conn):
     #st.write("Inside mark_entry")  # Debug message
@@ -31,9 +28,9 @@ def mark_entry(conn):
         database.insert_entry(conn, today, current_time, "main")
         st.write(f"Main entry marked for {today} at {to_12_hour_format(current_time)}")
     else:
-       pass #st.write("Main entry already exists, doing nothing")
+    #st.write("Main entry already exists, doing nothing")
     #else:
-      #st.write("Entry already exists, doing nothing")  # Debug message
+      st.write("Entry already exists")  # Debug message
 
 
 def start_lunch(conn):
@@ -56,7 +53,7 @@ def start_lunch(conn):
         database.insert_entry(conn, today, current_time, "lunch", parent_id = main_entry_id)
         st.write(f"Lunch Started for {today} at {to_12_hour_format(current_time)}")
     else:
-        pass #st.write("Lunch already started, doing nothing")
+        st.write("Lunch already started")
 
 def end_lunch(conn):
     today = get_today_date()
@@ -80,45 +77,39 @@ def end_lunch(conn):
         database.update_exit(conn, lunch_id, current_time)
         st.write(f"Lunch ended for {today} at {to_12_hour_format(current_time)} (started at {lunch_entry_time}) ")
     else:
-        pass #st.write("doing nothing")
+         st.write("Lunch already ended")
 
-def calculate_duration(start_time, end_time):
-    if not start_time or not end_time:
-        return None
-    try:
-        start = datetime.strptime(start_time, "%H:%M:%S")
-        end = datetime.strptime(end_time,"%H:%M:%S" )
-        duration_seconds = (end - start).total_seconds()
-        if duration_seconds <0 :
-            return None
-        return round(duration_seconds / 3600, 2)
-    except ValueError:
-        return None
+
+
 
 def calculate_daily_hours(conn, date):
-    logs = fetch_today_log(conn, date)
-    if not logs:
-        return None, None, None
-    main_entry_time, main_exit_time, lunch_entry_time, lunch_exit_time = None, None, None, None
+    c = conn.cursor()
+    # Fetch main record
+    c.execute("SELECT entry_time, exit_time FROM attendance WHERE date = ? AND type = 'main'", (date,))
+    main_record = c.fetchone()
 
-    for log in logs:
-        entry_id, entry_time, exit_time, entry_type ,parent_id = log
-        if entry_type == "main":
-            main_entry_time, main_exit_time = entry_time, exit_time
-        elif entry_type == "lunch":
-            lunch_entry_time, lunch_exit_time = entry_time, exit_time
+    # Fetch lunch record
+    c.execute("SELECT entry_time, exit_time FROM attendance WHERE date = ? AND type = 'lunch'", (date,))
+    lunch_record = c.fetchone()
 
-    main_hours = calculate_duration(main_entry_time, main_exit_time)
-    if main_hours is None:
-        return None, None, None
+    main_hours = None
+    lunch_hours = None
+    work_hours = None
 
-    lunch_hours = calculate_duration(lunch_entry_time, lunch_exit_time)
-    if lunch_hours is None:
-        return None, None, None
+    if main_record and main_record[0] and main_record[1]:
+        main_start = datetime.strptime(main_record[0], "%H:%M:%S")
+        main_end = datetime.strptime(main_record[1], "%H:%M:%S")
+        main_duration = main_end - main_start
+        main_hours = main_duration.total_seconds() / 3600  # Convert to hours
 
-    total_hours = main_hours - (lunch_hours if lunch_hours else 0)
-    return main_hours, lunch_hours, total_hours
+        if lunch_record and lunch_record[0] and lunch_record[1]:
+            lunch_start = datetime.strptime(lunch_record[0], "%H:%M:%S")
+            lunch_end = datetime.strptime(lunch_record[1], "%H:%M:%S")
+            lunch_duration = lunch_end - lunch_start
+            lunch_hours = lunch_duration.total_seconds() / 3600
+            work_hours = main_hours - lunch_hours
 
+    return main_hours, lunch_hours, work_hours
 
 def mark_exit(conn):
     #st.write("Inside mark_exit")  # Debug message
@@ -176,22 +167,36 @@ def get_log_for_date(conn, date):
     log_text = []
     main_hours, lunch_hours, work_hours = calculate_daily_hours(conn, date)
 
+    has_lunch = False
     for log in logs:
         entry_id, entry_time, exit_time, entry_type, parent_id= log
         if entry_type == "main":
             log_text.append(f"Main Entry : {to_12_hour_format(entry_time)} | Exit : {to_12_hour_format(exit_time) if exit_time else 'Not Marked'}")
         elif entry_type == "lunch" and parent_id:
+            has_lunch = True
             log_text.append(f"  Lunch Entry : {to_12_hour_format(entry_time)} | Exit : {to_12_hour_format(exit_time) if exit_time else 'Not Marked'}")
 
-    # Add work hours summary
+    # Add duration summaries
     if main_hours is not None:
-        log_text.append(f"Main Duration: {main_hours:.2f} hours")
-    if lunch_hours is not None:
-        log_text.append(f"Lunch Duration: {lunch_hours:.2f} hrs")
-    if work_hours is not None:
-        log_text.append(f"Work Hours (excluding lunch): {work_hours:.2f} hrs")
+        log_text.append(f"Main Duration: {format_duration(main_hours)}")
+    else:
+        log_text.append("Main Duration: Not available (incomplete entry/exit)")
+    if has_lunch:
+        if lunch_hours is not None:
+            log_text.append(f"Lunch Duration: {format_duration(lunch_hours)}")
+        else:
+            log_text.append("Lunch Duration: Not available (incomplete lunch entry/exit)")
+        if work_hours is not None:
+            log_text.append(f"Work Hours (excluding lunch): {format_duration(work_hours)}")
+        else:
+            log_text.append("Work Hours (excluding lunch): Not available")
+    else:
+        log_text.append("No lunch break taken.")
 
     return "\n".join(log_text)
+
+
+
 
 #def get_full_history(conn):
 #    records = database.get_all_logs(conn, limit = 100)

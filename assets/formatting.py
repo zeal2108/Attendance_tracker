@@ -28,3 +28,11 @@ def to_12_hour_format(time_str):
             return t.strftime("%I:%M %p").lstrip("0")
         except ValueError:
             return time_str
+
+def format_duration(hours):
+    if hours is None:
+        return "Not available"
+    total_minutes = hours * 60  # Convert hours to minutes
+    hours_part = int(total_minutes // 60)  # Whole hours
+    minutes_part = int(total_minutes % 60)  # Remaining minutes
+    return f"{hours_part} hrs, {minutes_part} mins"
