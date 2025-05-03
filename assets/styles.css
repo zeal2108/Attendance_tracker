@@ -78,8 +78,8 @@ div[data-testid="stHeadingWithActionElements"] h3 {
 /* Sidebar styling */
 section[data-testid="stSidebar"] {
    width: auto !important;
-    min-width: 400px !important;
-    max-width: 400px !important;
+    /* min-width: 400px !important;
+    max-width: 400px !important; */
     resize: none !important;
     overflow: hidden !important;
     background-color: #333 !important;
