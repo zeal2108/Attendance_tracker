@@ -4,7 +4,7 @@ import pandas as pd
 from logic.attendance_logic import mark_entry, mark_exit, start_lunch, end_lunch, get_today_log, get_log_for_date
 from db.database import init_db, reset_db
 from datetime import datetime, timedelta
-from assets.formatting import format_date_pretty
+from assets.formatting import format_date_pretty, to_12_hour_format
 
 
 # Set page config as the first Streamlit command
@@ -23,7 +23,7 @@ dev_password = st.secrets["database"]["dev_password"]
 if 'authentication' not in st.session_state:
      st.session_state['authentication'] = False
 if 'pwd_input' not in st.session_state:
-     st.session_state['pwd_input'] = ""
+     st.session_state['pwd_input'] = ''
 if 'reset_confirmed' not in st.session_state:
     st.session_state['reset_confirmed'] = False
 if 'lunch_active' not in st.session_state:
@@ -36,29 +36,31 @@ if 'current_date' not in st.session_state:
     st.session_state['current_date'] = datetime.now().strftime("%Y-%m-%d")
 
 
-
-#User input for password
-@st.dialog("Enter Password")
-def ask_pwd_dialog():
-    u_pwd = st.text_input("Press enter to confirm", type="password", key="dialog_pwd_input")
-    if st.button("Continue"):
-        if u_pwd:
-            st.session_state['pwd_input'] = u_pwd
-            st.rerun()
-        else:
-            st.error("Please Enter Password. ")
-
 if not st.session_state['authentication']:
-    ask_pwd_dialog()
-    user_password = st.session_state["pwd_input"]
-    if user_password == expected_password:
-        st.session_state['authentication'] = True
-        st.session_state['pwd_input'] = ''
-        st.rerun()
-    elif user_password != '' and user_password != expected_password:
-        st.error("Invalid Password, Try Again !!")
-        st.session_state['pwd_input'] = ''
-        st.rerun()
+    if st.session_state.get('pwd_input', '') == '':
+        @st.dialog("Enter Password")
+        def ask_pwd_dialog():
+            u_pwd = st.text_input("Press enter to confirm ", type="password", key="dialog_pwd_input")
+            if st.button("Continue"):
+                if u_pwd:
+                    st.session_state['pwd_input'] = u_pwd
+                    st.rerun()
+                else:
+                    st.error("Please Enter Password. ")
+            st.write("Refresh Page if this Closes")
+
+        ask_pwd_dialog()
+
+    else:
+        user_password = st.session_state["pwd_input"]
+        if user_password == expected_password:
+            st.session_state['authentication'] = True
+            st.session_state['pwd_input'] = ''
+            st.rerun()
+        elif user_password != '' and user_password != expected_password:
+            st.error("Invalid Password, Refresh the Page to Try Again !!. ")
+            st.session_state['pwd_input'] = ''
+
 
 
 if st.session_state['authentication']:
@@ -104,21 +106,16 @@ if st.session_state['authentication']:
         left_col, right_col = st.columns(2)
 
         with (left_col):
-            disable_entry = st.session_state['has_exited']
-            if st.button('✅ Mark Entry', use_container_width=True, key="mark_entry_btn", disabled = disable_entry):
+            #disable_entry = st.session_state['has_exited']
+            if st.button('✅ Mark Entry', use_container_width=True, key="mark_entry_btn"):
                 st.session_state['entry_active'] = True
                 mark_entry(conn)
 
-            c = conn.cursor()
-            today = datetime.now().strftime("%Y-%m-%d")
-            c.execute(
-                "SELECT exit_time FROM attendance WHERE date = ? AND type = 'lunch' ORDER BY entry_time DESC LIMIT 1",
-                (today,))
-            lunch_exit = c.fetchone()
-            disable_exit = not st.session_state['entry_active'] or st.session_state['has_exited'] or st.session_state['lunch_active']
+
+            disable_exit = not st.session_state['entry_active'] or st.session_state['lunch_active']
             if st.button('🏁 Mark Exit', use_container_width=True, key="mark_exit_btn", disabled=disable_exit):
                 mark_exit(conn)
-                st.session_state['entry_active'] = False
+                #st.session_state['entry_active'] = False
                 st.session_state['lunch_active'] = False
                 c = conn.cursor()
                 c.execute(
@@ -134,8 +131,8 @@ if st.session_state['authentication']:
                 "SELECT entry_time FROM attendance WHERE date = ? AND type = 'main' ORDER BY entry_time DESC LIMIT 1",
                 (today,))
             main_entry = c.fetchone()
-            disable_exit = not st.session_state['entry_active'] or main_entry is None or st.session_state['has_exited']
-            if st.button('🍴 Start Lunch', use_container_width=True, key="start_lunch_btn", disabled = disable_exit):
+            #disable_exit = not st.session_state['entry_active'] or main_entry is None #or st.session_state['has_exited']
+            if st.button('🍴 Start Lunch', use_container_width=True, key="start_lunch_btn"):
                 start_lunch(conn)
                 st.session_state['lunch_active'] = True
                 st.rerun()
@@ -144,7 +141,7 @@ if st.session_state['authentication']:
                 "SELECT entry_time FROM attendance WHERE date = ? AND type = 'main' ORDER BY entry_time DESC LIMIT 1",
                 (today,))
             main_entry = c.fetchone()
-            if st.button('🍽️ End Lunch', use_container_width=True, key="end_lunch_btn", disabled = disable_exit):
+            if st.button('🍽️ End Lunch', use_container_width=True, key="end_lunch_btn"):
                 end_lunch(conn)
                 st.session_state['lunch_active'] = False
                 st.rerun()
@@ -212,7 +209,7 @@ if st.session_state['authentication']:
 
                 elif dev_input != "" and dev_input != dev_password:
                    st.error("Invalid Key Entered, Try Again !!")
-        # Close the connection
+
         conn.close()
     except Exception as e:
         st.error(f"Database error: {e}")
