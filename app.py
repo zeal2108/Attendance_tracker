@@ -1,25 +1,31 @@
 import streamlit as st
-import sqlite3
+import psycopg2 as sql
 import pandas as pd
 from logic.attendance_logic import mark_entry, mark_exit, start_lunch, end_lunch, get_today_log, get_log_for_date
 from db.database import init_db, reset_db
 from datetime import datetime, timedelta
-from assets.formatting import format_date_pretty, to_12_hour_format
-
+from assets.formatting import format_date_pretty
 
 # Set page config as the first Streamlit command
 st.set_page_config(page_title="Daily Help Attendance", page_icon="📋")
 
+#Injecting CSS
 with open("assets/styles.css", "r") as css_file:
     css = css_file.read()
 st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
-
-# Get password and database path from secrets
+# Get password and database connection details from secrets
 expected_password = st.secrets["database"]["password"]
-db_path = st.secrets["database"]["path"]
+#db_path = st.secrets["database"]["path"]
 dev_password = st.secrets["database"]["dev_password"]
+db_name=st.secrets["database"]["db_name"]
+db_user=st.secrets["database"]["db_user"]
+db_password=st.secrets["database"]["db_password"]
+db_host=st.secrets["database"]["db_host"]
+db_port=st.secrets["database"]["db_port"]
 
+
+#Initializing the session states
 if 'authentication' not in st.session_state:
      st.session_state['authentication'] = False
 if 'pwd_input' not in st.session_state:
@@ -38,19 +44,21 @@ if 'current_date' not in st.session_state:
 
 if not st.session_state['authentication']:
     if st.session_state.get('pwd_input', '') == '':
-        @st.dialog("Enter Password")
-        def ask_pwd_dialog():
-            u_pwd = st.text_input("Press enter to confirm ", type="password", key="dialog_pwd_input")
-            if st.button("Continue"):
-                if u_pwd:
-                    st.session_state['pwd_input'] = u_pwd
-                    st.rerun()
-                else:
-                    st.error("Please Enter Password. ")
-            st.write("Refresh Page if this Closes")
+        col1, col2, col3 = st.columns(3)
+        with col2:
+            if st.button("Login",use_container_width=True):
+                @st.dialog("Enter Password")
+                def ask_pwd_dialog():
+                    u_pwd = st.text_input("Press enter to confirm ", type="password", key="dialog_pwd_input")
+                    if st.button("Continue"):
+                        if u_pwd:
+                            st.session_state['pwd_input'] = u_pwd
+                            st.rerun()
+                        else:
+                            st.error("Please Enter Password. ")
 
-        ask_pwd_dialog()
 
+                ask_pwd_dialog()
     else:
         user_password = st.session_state["pwd_input"]
         if user_password == expected_password:
@@ -62,14 +70,19 @@ if not st.session_state['authentication']:
             st.session_state['pwd_input'] = ''
 
 
-
 if st.session_state['authentication']:
     try:
         # Connect to the database
-        conn = sqlite3.connect(db_path, check_same_thread=False)
-        #st.success("Access granted! Connected to the database.")
+        conn = sql.connect(
+            dbname=db_name,
+            user=db_user,
+            password=db_password,
+            host=db_host,
+            port=db_port
+        )
+        st.success("Welcome! Connected to the database.")
 
-        # Initialize the database table
+        # Initialize the database
         init_db(conn)
 
         today = datetime.now().strftime("%Y-%m-%d")
@@ -78,21 +91,21 @@ if st.session_state['authentication']:
             st.session_state['lunch_active'] = False
             st.session_state['has_exited'] = False
 
-            # Check if an entry-exit pair already exists for today
+        # Check if an entry-exit pair already exists for today
         c = conn.cursor()
-        c.execute("SELECT * FROM attendance WHERE date = ? AND type = 'main' AND id IS NOT NULL AND entry_time IS NOT NULL AND exit_time IS NOT NULL",
-                (today,))
+        c.execute("SELECT * FROM attendance WHERE date = %s AND type = 'main' AND id IS NOT NULL AND entry_time "
+                  "IS NOT NULL AND exit_time IS NOT NULL",(today,))
         if c.fetchone():
             st.session_state['has_exited'] = True
             st.session_state['has_entered'] = False
             st.session_state['lunch_active'] = False
         else:
             # Check if an entry exists for today
-            c.execute("SELECT * FROM attendance WHERE date = ? AND type = 'main'", (today,))
+            c.execute("SELECT * FROM attendance WHERE date = %s AND type = 'main'", (today,))
             if c.fetchone():
                 st.session_state['has_entered'] = True
             # Check if an active lunch record exists for today
-            c.execute("SELECT * FROM attendance WHERE date = ? AND type = 'lunch' AND exit_time IS NULL", (today,))
+            c.execute("SELECT * FROM attendance WHERE date = %s AND type = 'lunch' AND exit_time IS NULL", (today,))
             if c.fetchone():
                 st.session_state['lunch_active'] = True
             else:
@@ -102,10 +115,9 @@ if st.session_state['authentication']:
         st.title("📋 Daily Help Attendance Tracker")
         st.write("Simple app to track Entry and Exit times.")
 
-
         left_col, right_col = st.columns(2)
 
-        with (left_col):
+        with left_col:
             #disable_entry = st.session_state['has_exited']
             if st.button('✅ Mark Entry', use_container_width=True, key="mark_entry_btn"):
                 st.session_state['entry_active'] = True
@@ -119,7 +131,7 @@ if st.session_state['authentication']:
                 st.session_state['lunch_active'] = False
                 c = conn.cursor()
                 c.execute(
-                    "SELECT * FROM attendance WHERE date = ? AND type = 'main' AND entry_time IS NOT NULL AND exit_time IS NOT NULL",
+                    "SELECT * FROM attendance WHERE date = %s AND type = 'main' AND entry_time IS NOT NULL AND exit_time IS NOT NULL",
                     (today,))
                 if c.fetchone():
                     st.session_state['has_exited'] = True
@@ -128,7 +140,7 @@ if st.session_state['authentication']:
         with right_col:
             today = datetime.now().strftime("%Y-%m-%d")
             c.execute(
-                "SELECT entry_time FROM attendance WHERE date = ? AND type = 'main' ORDER BY entry_time DESC LIMIT 1",
+                "SELECT entry_time FROM attendance WHERE date = %s AND type = 'main' ORDER BY entry_time DESC LIMIT 1",
                 (today,))
             main_entry = c.fetchone()
             #disable_exit = not st.session_state['entry_active'] or main_entry is None #or st.session_state['has_exited']
@@ -138,7 +150,7 @@ if st.session_state['authentication']:
                 st.rerun()
                     #st.success("Lunch Started")
             c.execute(
-                "SELECT entry_time FROM attendance WHERE date = ? AND type = 'main' ORDER BY entry_time DESC LIMIT 1",
+                "SELECT entry_time FROM attendance WHERE date = %s AND type = 'main' ORDER BY entry_time DESC LIMIT 1",
                 (today,))
             main_entry = c.fetchone()
             if st.button('🍽️ End Lunch', use_container_width=True, key="end_lunch_btn"):
@@ -181,11 +193,13 @@ if st.session_state['authentication']:
             if st.button("Download as CSV"):
 
                if start_date:
-                 records = conn.execute("SELECT date, entry_time, exit_time FROM attendance WHERE date >= ? ORDER BY date", (start_date,)).fetchall()
+                 c.execute("SELECT date, entry_time, exit_time, type FROM attendance WHERE date >= %s ORDER BY date", (start_date,))
+                 records = c.fetchall()
                else:
-                 records = conn.execute("SELECT date, entry_time, exit_time FROM attendance ORDER BY date").fetchall()
+                 c.execute("SELECT date, entry_time, exit_time, type FROM attendance ORDER BY date")
+                 records = c.fetchall()
 
-               df = pd.DataFrame(records, columns =["DATE ", "ENTRY ", "EXIT "])
+               df = pd.DataFrame(records, columns =["DATE ", "ENTRY ", "EXIT ", "ENTRY TYPE "])
                df["EXIT "] = df["EXIT "].fillna("Not Marked")
                csv = df.to_csv(index = False, float_format = "%.2f")
 

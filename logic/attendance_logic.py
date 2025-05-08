@@ -21,7 +21,7 @@ def mark_entry(conn):
 
     #if existing is None:
     c = conn.cursor()
-    c.execute("SELECT id FROM attendance WHERE date = ? AND type = 'main'", (today,))
+    c.execute("SELECT id FROM attendance WHERE date = %s AND type = 'main'", (today,))
     main_entry = c.fetchone()
 
     if not main_entry:
@@ -38,7 +38,7 @@ def start_lunch(conn):
     current_time = get_current_time()
 
     c = conn.cursor()
-    c.execute("SELECT id FROM attendance WHERE date = ? AND type = 'main'", (today,))
+    c.execute("SELECT id FROM attendance WHERE date = %s AND type = 'main'", (today,))
     main_entry = c.fetchone()
 
     if not main_entry:
@@ -46,7 +46,7 @@ def start_lunch(conn):
         return
     main_entry_id = main_entry[0]
 
-    c.execute("SELECT id FROM attendance WHERE date = ? AND type ='lunch' AND parent_id = ? ", (today, main_entry_id))
+    c.execute("SELECT id FROM attendance WHERE date = %s AND type ='lunch' AND parent_id = %s ", (today, main_entry_id))
     lunch_entry = c.fetchone()
 
     if not lunch_entry:
@@ -60,7 +60,7 @@ def end_lunch(conn):
     current_time = get_current_time()
 
     c = conn.cursor()
-    c.execute("SELECT id FROM attendance WHERE date = ? AND type = 'main'", (today,))
+    c.execute("SELECT id FROM attendance WHERE date = %s AND type = 'main'", (today,))
     main_entry = c.fetchone()
 
     if not main_entry:
@@ -68,7 +68,7 @@ def end_lunch(conn):
         return
     main_entry_id = main_entry[0]
 
-    c.execute("SELECT id, entry_time FROM attendance WHERE date = ? AND type = 'lunch' AND parent_id = ? "
+    c.execute("SELECT id, entry_time FROM attendance WHERE date = %s AND type = 'lunch' AND parent_id = %s "
               "AND exit_time IS NULL", (today, main_entry_id))
     lunch_entry = c.fetchone()
 
@@ -85,11 +85,11 @@ def end_lunch(conn):
 def calculate_daily_hours(conn, date):
     c = conn.cursor()
     # Fetch main record
-    c.execute("SELECT entry_time, exit_time FROM attendance WHERE date = ? AND type = 'main'", (date,))
+    c.execute("SELECT entry_time, exit_time FROM attendance WHERE date = %s AND type = 'main'", (date,))
     main_record = c.fetchone()
 
     # Fetch lunch record
-    c.execute("SELECT entry_time, exit_time FROM attendance WHERE date = ? AND type = 'lunch'", (date,))
+    c.execute("SELECT entry_time, exit_time FROM attendance WHERE date = %s AND type = 'lunch'", (date,))
     lunch_record = c.fetchone()
 
     main_hours = None
@@ -116,7 +116,7 @@ def mark_exit(conn):
     today = get_today_date()
     current_time = get_current_time()
     c = conn.cursor()
-    c.execute("SELECT id, entry_time FROM attendance WHERE date = ? AND type = 'main'"
+    c.execute("SELECT id, entry_time FROM attendance WHERE date = %s AND type = 'main'"
               "AND exit_time IS NULL", (today,))
     main_entry = c.fetchone()
 
@@ -194,9 +194,6 @@ def get_log_for_date(conn, date):
         log_text.append("No lunch break taken.")
 
     return "\n".join(log_text)
-
-
-
 
 #def get_full_history(conn):
 #    records = database.get_all_logs(conn, limit = 100)
